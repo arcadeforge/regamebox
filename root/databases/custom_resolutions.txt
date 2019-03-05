@@ -1,0 +1,24 @@
+hdmi_timings#xres#xpos#yres#ypos#emu#emu_type#core
+320 1 12 20 52 240 1 5 7 11 0 0 0 60 0 6400000 1 #320#0#240#0# lemonlauncher #normal#shell
+450 1 50 30 90 270 1 1 1 30 0 0 0 50 0 9600000 1 #450#0#270#0# default #normal#shell
+320 240 60 0# c64 #normal#x64
+320 240 60 0# c64dtv #normal#x64dtv
+256 224 60 0# nes #console#fceumm_libretro.so
+320 224 60 0# atari2600 #console#stella_libretro.so
+320 224 60 0# pce #console#mednafen_pce_fast_libretro.so
+256 224 60 0# snes #console#snes9x2010_libretro.so
+320 240 60 0# psx #console#pcsx_rearmed_libretro.so
+320 240 60 0# psx #console#mednafen_psx_libretro.so
+320 240 60 0# gb #console#gambatte_libretro.so
+320 240 60 0# gba #console#mgba_libretro.so
+256 224 60 0# nestopia #console#nestopia_libretro.so
+320 224 60 0# supergrafx #console#mednafen_supergrafx_libretro.so
+320 224 60 0# megadrive #console#picodrive_libretro.so
+320 240 60 0# n64 #console#glupen64_libretro.so
+320 240 60 0# spectrum #console#fuse_libretro.so
+320 224 60 0# genesis #console#genesis_plus_gx_libretro.so
+320 240 60 0# lr-fbalpha #arcade#fbalpha_libretro.so
+320 240 60 0# mame2000 #arcade#mame2000_libretro.so
+320 240 60 0# mame2003 #arcade#mame2003_libretro.so
+320 240 60 0# mame2003plus #arcade#mame2003_plus_libretro.so
+1600 1 54 150 231 240 60 0 32000000 1 #1120#240#256#0# vertical_default #arcade#vertical_default

@@ -1,0 +1,13 @@
+[INFO] RetroArch 1.7.2 (Git 8c400ce)
+[INFO] Redirecting save file to "/root/.config/retroarch/system/airwolf.srm".
+[INFO] Redirecting savestate to "/root/.config/retroarch/system/airwolf.state".
+[INFO] === Build =======================================
+Capabilities: NEON VFPv3 VFPv4 
+Built: Apr 28 2018
+[INFO] Version: 1.7.2
+[INFO] Git: 8c400ce
+[INFO] =================================================
+[INFO] Loading dynamic libretro core from: "/root/.config/retroarch/cores/mame2003_plus_libretro.so"
+[INFO] [overrides] core-specific overrides found at /root/.config/retroarch/config/MAME 2003-Plus/MAME 2003-Plus.cfg.
+[INFO] [overrides] no game-specific overrides found at /root/.config/retroarch/config/MAME 2003-Plus/airwolf.cfg.
+[INFO] Config: appending config "/root/.config/retroarch/config/MAME 2003-Plus/MAME 2003-Plus.cfg"

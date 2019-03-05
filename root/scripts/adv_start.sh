@@ -1,0 +1,2 @@
+/root/local/bin/advmenu
+

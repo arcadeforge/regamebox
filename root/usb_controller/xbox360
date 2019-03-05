@@ -1,0 +1,14 @@
+# Menu is start and Y
+# Exit is Start und Select
+# hotkey for exit if gamepad
+input_exit_emulator = "ctrl"
+input_enable_hotkey = "num1"
+input_menu_toggle = "alt"
+
+#select
+input_enable_hotkey_btn = "6"
+#start
+input_exit_emulator_btn = "7"
+#button X
+input_menu_toggle_btn = "2"
+

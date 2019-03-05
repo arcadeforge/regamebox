@@ -1,0 +1,26 @@
+# hotkey for exit if gamepad
+input_exit_emulator = "ctrl"
+input_enable_hotkey = "num1"
+input_enable_hotkey_btn = "4"
+input_exit_emulator_btn = "0"
+input_menu_toggle = "alt"
+input_menu_toggle_btn = "1"
+
+# c64mini usb joystick specific settings
+input_player1_y_btn = "0"
+input_player1_x_btn = "1"
+input_player1_l_btn = "2"
+
+input_player1_b_btn = "3"
+input_player1_a_btn = "6"
+input_player1_r_btn = "7"
+
+input_player1_select_btn = "4"
+input_player1_start_btn = "5"
+
+input_player1_up_axis = "-1"
+input_player1_down_axis = "+1"
+input_player1_left_axis = "-0"
+input_player1_right_axis = "+0"
+
+

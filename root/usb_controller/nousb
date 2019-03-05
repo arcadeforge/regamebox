@@ -1,0 +1,28 @@
+# no hotkey for exit
+input_exit_emulator = "escape"
+input_menu_toggle = "f1"
+
+# turn remaps off, so it will not override user settings
+#input_remap_binds_enable = "false"
+
+
+input_enable_hotkey = "nul"
+input_enable_hotkey_btn = "nul"
+input_exit_emulator_btn = "nul"
+input_menu_toggle_btn = "nul"
+
+input_player1_y_btn = "nul"
+input_player1_x_btn = "nul"
+input_player1_l_btn = "nul"
+
+input_player1_b_btn = "nul"
+input_player1_a_btn = "nul"
+input_player1_r_btn = "nul"
+
+input_player1_select_btn = "nul"
+input_player1_start_btn = "nul"
+
+input_player1_up_axis = "nul"
+input_player1_down_axis = "nul"
+input_player1_left_axis = "nul"
+input_player1_right_axis = "nul"

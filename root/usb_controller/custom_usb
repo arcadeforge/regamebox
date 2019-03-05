@@ -1,0 +1,6 @@
+input_enable_hotkey_btn ="6"
+input_exit_emulator_btn ="7"
+input_menu_toggle_btn ="2"
+input_menu_toggle = "alt"
+input_enable_hotkey = "num1"
+input_exit_emulator = "ctrl"

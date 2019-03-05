@@ -1,0 +1,56 @@
+device_video fb
+device_keyboard raw
+device_joystick raw
+device_mouse event
+
+dir_rom /mnt/sda/rpi2jamma/roms/advmame
+dir_sample /mnt/sda/rpi2jamma/roms/advmame/sample
+dir_snap /mnt/sda/rpi2jamma/roms_advmame/snaps
+
+display_brightness 1.0
+display_gamma 1.0
+display_artwork_backdrop no
+display_artwork_crop no
+display_artwork_overlay no
+display_expand 1.0
+misc_quiet yes
+misc_safequit no
+input_steadykey no
+display_vsync yes
+
+display_resizeeffect none
+
+sound_volume 0
+sound_adjust 0
+sound_normalize no
+sync_resample internal
+
+display_adjust xclock
+
+device_video_clock 3 - 50 / 15-16 / 50-60
+
+#device_video_modeline mode1 31.96 1520 1667 1837 2038 224 239 245 265 -hsync -vsync
+
+#device_video_modeline modeC5 32 1600 1701 1851 2035 224 236 244 262 -hsync -vsync
+#device_video_modeline mode6 32 1600 1670 1820 2035 240 244 247 262 -hsync -vsync
+#device_video_modeline modeC7 40.86 1920 2114 2361 2599 224 232 239 262 -hsync -vsync
+
+#device_video_modeline Robocop 40.88 1920 2114 2361 2599 240 248 254 274 -hsync -vsync
+#device_video_modeline rtype 40.80 1920 2114 2361 2599 224 240 253 285 -hsync -vsync
+
+#256x240x57/display_mode Robocop
+#384x256x55/display_mode rtype
+
+# comment in on purpose
+#256x224x59/display_mode modeC7
+#384x224x60/display_mode modeC7
+#320x224x60/display_mode modeC5
+#304x224x60/display_mode modeC5
+#256x224x60/display_mode modeC7
+#336x240x60/display_mode mode6
+#320x224x59/display_mode modeC5
+#320x240x60/display_mode mode6
+
+input_map[start1] joystick_button[0,9] or keyboard[0,1]
+input_map[coin1] joystick_button[0,8] or keyboard[0,5]
+input_map[ui_cancel] joystick_button[0,8] joystick_button[0,9] or keyboard[0,esc]
