@@ -9,6 +9,9 @@
 
 # regamebox - by Jochen Zurborg
 ### version 2.6
+# 20190307
+# added menu png and complere 6 button gamepad retroarch and ll configuration and lemon   configuration 
+#
 
 # fixed lemonlauncher to handle usb gamepads with analog thumbsticks
 # added hotkey, game exit, retroarch menu to joy setup wizard
@@ -1347,7 +1350,7 @@ function usb_gamepad_wizard () {
     log_msg "usb_gamepad_wizard : set usb gamepad" 0
 
     USB_GAMEPAD_OLD=$USB_GAMEPAD
-    /root/scripts/joy_wizard
+    /root/scripts/joy_wizard/joy_wizard
     cp /root/config/lemonlauncher_custom_usb.conf /root/.lemonlauncher/lemonlauncher_custom_usb.cfg 
     USB_GAMEPAD="custom_usb"
     set_config_param "USB_GAMEPAD" "$USB_GAMEPAD_OLD" "$USB_GAMEPAD"
