@@ -10,8 +10,8 @@
 # regamebox - by Jochen Zurborg
 ### version 2.6
 # 20190307
-# added menu png and complere 6 button gamepad retroarch and ll configuration and lemon   configuration 
-#
+# added menu png and complere 6 button gamepad retroarch and ll configuration and lemon configuration 
+# installed omxplayer and ffmpeg
 
 # fixed lemonlauncher to handle usb gamepads with analog thumbsticks
 # added hotkey, game exit, retroarch menu to joy setup wizard
