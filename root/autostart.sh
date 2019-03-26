@@ -1,18 +1,39 @@
 #!/bin/bash
 ##############
 
+# TODO 
+# -lemonlauncher_template.conf is in .lemonlauncher and is a kind of tmp config files. All inbetween files
+#   should be stored in config
+# todo deploy  
+# todo download snap
+# todo rename folder rpi2jamma/roms_advmame to rpi2jamma/snaps_advmame if exists
+# todo poll usb controllers for automatic config
 
 
-# known bugs : menu issue. Exit game jumps from gamelist in history. Fix hash in lemonlauncher
+# KNOW BUGS : menu issue. Exit game jumps from gamelist in history. Fix hash in lemonlauncher
 # retroarch bug : Failed saving when core is active. goto quick menu, close content, make settings again and goto configuration, save configuration
 #     appears in mame2003 and mame2003plus
 
 # regamebox - by Jochen Zurborg
 ### version 2.6
-# 20190307
+# change 15.03.2019
+# added feature init or recovery for from tmp files like pikeyd165 or background 
+# bug fixed theme handling
+# added feature for theme with dedicated backgrounds for background_gamelists.png, background_options.png, background_themes.png 
+# added script show_text on framebuffer
+# added new intro videos splash.mp4, splash_neon.mp4
+
+# change 14.03.2019
+# added add favourites button to lemonlauncher
+# added snap feature to lemonlauncher for menu 
+#   items like configuration, arcade, snes, ...
+# added video snap preview to lemonlauncher 
+# added snaps for menu items
+# optimzed shell yres to 220 
+
+# change 07.03.2019
 # added menu png and complere 6 button gamepad retroarch and ll configuration and lemon configuration 
 # installed omxplayer and ffmpeg
-
 # fixed lemonlauncher to handle usb gamepads with analog thumbsticks
 # added hotkey, game exit, retroarch menu to joy setup wizard
 # fixed chrashes on joy wizard that messes up lemonlauncher
@@ -25,13 +46,10 @@
 # added parameter SHOW_ALL for showing all games in vertical setup. 
 # added simple_pin, simple_pin2, simple_pin_vert, simple_pin_vert2 from
 #     from pinHp Image to regamebox. thanks for this.
-
-# todo deploy  
-# todo download snap
-# todo rename folder rpi2jamma/roms_advmame to rpi2jamma/snaps_advmame if exists
-# todo poll usb controllers for automatic config
+# 
 
 # regamebox - by Jochen Zurborg
+
 ### version 2.5.2
 
 # fix in init_usb_folders.sh for generating usb stick folder structure
@@ -209,11 +227,11 @@
 # TODO
 # - delayed start of timesyncd services
 
-VERSION="Regamebox v2.6 work 20190221"
+VERSION="Regamebox v2.6 work 20190313"
 # T for Time measures and Y for debugging
 #DEBUG="T"
-DEBUG="N"
-#DEBUG="Y"
+#DEBUG="N"
+DEBUG="Y"
 
 
 
@@ -265,6 +283,11 @@ INIT_REGAMEBOX="N"
 auto_turn_screen="N"
 opt_cmdshell_res="Y"
 REFRESH_GAMELIST="Y"
+THEME_PATH="/root/themes/themes"
+THEME_PATH_LOWRES="/root/themes/themes"
+THEME_PATH_HIGHRES="/root/themes/themes_highres"
+THEME="turrican"
+
 
 # this function set a paramter in the configs file
 # and adapts the games.config
@@ -466,13 +489,18 @@ function del_disp_advmame () {
 #in lowres mode a optimized shell res can be used
 function set_res_default ()
 {
+    if [ "$RESMODE" == "LOW" ]; then
 
-    if [ "$opt_cmdshell_res" == "Y" ]; then
-        if [ "$RESMODE" == "LOW" ]; then
+        if [ "$opt_cmdshell_res" == "Y" ]; then
             log_msg "set_res_default : setting default low res" 0
             /opt/vc/bin/vcgencmd hdmi_timings 450 1 50 30 90 270 1 1 1 30 0 0 0 60 0 9600000 1 > /dev/null 
             tvservice -e  "DMT 87" > /dev/null
-            fbset -g 450 270 450 270 24 > /dev/null
+            fbset -g 450 220 450 220 24 > /dev/null
+        else
+            #fbset -g 280 200 280 200 24 > /dev/null
+            log_msg "fixme" 0
+            #fbset -g 280 200 280 200 24 > /dev/null
+
         fi
     fi 
 }
@@ -1065,9 +1093,25 @@ function set_config_param() {
     if grep -q "$param=\"$old_value\"" $config_file; then  
         sed -i "s/$param=\"$old_value\"/$param=\"$new_value\"/" $config_file
         log_msg "set_config_param : set $param to $new_value" 0
+    else
+        log_msg "set_config_param : no $param with $old_value found. FIXME" 0
     fi
 
 }
+
+function set_config_param2() {
+
+    param=$1
+    new_value=$2
+    
+    if grep -q "$param" $config_file; then  
+        sed -i "$param/d" $config_file
+    fi
+    echo "/$param=\"$new_value\"" >> $config_file
+    log_msg "set_config_param : set $param to $new_value" 0
+
+}
+
 
 function set_mode()
 {
@@ -1115,10 +1159,18 @@ function read_config_files ()
     if [ "$RESMODE" == "LOW" ]; then
         source $config_folder/retroarch_lowres.conf
         log_msg "read_config_files : Reading default retroarch lowres settings from $config_folder/retroarch_lowres.conf" 0
+        THEME_PATH="THEME_PATH_LOWRES"        
     else
         source $config_folder/retroarch_highres.conf
         log_msg "read_config_files : Reading default retroarch highres settings $config_folder/retroarch_highres.conf" 0
+        THEME_PATH="$THEME_PATH_HIGHRES"
     fi
+    log_msg "read_config_files : set themes path to $THEME_PATH" 0    
+    cp $THEME_PATH/$THEME/* /root/.lemonlauncher
+    cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
+    
+    log_msg "read_config_files : set theme $THEME" 0    
+    log_msg "read_config_files : cp $THEME_PATH/$THEME/* /root/.lemonlauncher" 0    
 
     # this is needed to take account for manual editing of config file
 
@@ -1350,7 +1402,9 @@ function usb_gamepad_wizard () {
     log_msg "usb_gamepad_wizard : set usb gamepad" 0
 
     USB_GAMEPAD_OLD=$USB_GAMEPAD
-    /root/scripts/joy_wizard/joy_wizard
+    cd /root/scripts/joy_wizard
+    ./joy_wizard
+    cd /root
     cp /root/config/lemonlauncher_custom_usb.conf /root/.lemonlauncher/lemonlauncher_custom_usb.cfg 
     USB_GAMEPAD="custom_usb"
     set_config_param "USB_GAMEPAD" "$USB_GAMEPAD_OLD" "$USB_GAMEPAD"
@@ -1766,8 +1820,8 @@ function hide_fav ()
 {
     # delete favs in games.conf
 
-    end_fav=$(grep -n "fav_tail" .lemonlauncher/games.conf_tmp | awk -F: '{print $1}')
-    start_fav=$(grep -n "menu \"Favourites\"" .lemonlauncher/games.conf_tmp | awk -F: '{print $1}')
+    end_fav=$(grep -n "favourites_tail" .lemonlauncher/games.conf_tmp | cut -d":" -f1 | tail -n 1)
+    start_fav=$(grep -n "menu \"Favourites\"" .lemonlauncher/games.conf_tmp | cut -d":" -f1 | head -n 1)
     sed -i "$start_fav,$end_fav d" .lemonlauncher/games.conf_tmp               
 
 }
@@ -1776,6 +1830,7 @@ function show_fav ()
 {
     rm_xist games.conf
     # add favourites.conf
+    # alte favs aus games.conf_tmp loeschen
     cat .lemonlauncher/games.conf_tmp $work_dir/favourites.conf > /root/tmp/games.conf_tmp
     cp /root/tmp/games.conf_tmp .lemonlauncher/games.conf_tmp
 
@@ -1848,6 +1903,9 @@ function handle_resmode ()
     if [ "$RESMODE" == "HIGH" ]; then 
         log_msg "handle_resmode : highres mode shall be used" 0
 
+        THEME_PATH="/root/themes/themes_highres"
+        log_msg "handle_resmode : set themes path to $THEME_PATH" 0    
+       
         rm_xist /root/tmp/toggle_lowres_done
         # prevents that themes will be overwritten each time.
         if [ -f /root/tmp/toggle_highres_done ]; then 
@@ -1857,11 +1915,13 @@ function handle_resmode ()
 
             cp $ADVHOME/advmame_highres.rc $ADVHOME/advmame.rc
             cp /boot/config_highres.txt /boot/config.txt
-            cp /root/themes/splash/splash_highres.png /root/splash.png
-            cp /root/themes/loadingen_highres.png /root/.lemonlauncher/loadingen.png
-            cp /root/themes/themes_highres/turrican/* /root/.lemonlauncher
-            cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
+            cp $THEME_PATH/../splash/splash_highres.png /root/splash.png
+            cp $THEME_PATH/../loadingen_highres.png /root/.lemonlauncher/loadingen.png
+            cp $THEME_PATH/$THEME/* /root/.lemonlauncher
+            set_config_param2 "THEME"Â"$THEME"
 
+            cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
+            #cp /root/.lemonlauncher/lemonlauncher.conf /root/config/lemonlauncher_template.conf
             if [ "$ORIENTATION" == "H" ]; then 
                 log_msg "handle_resmode : Call makeGamesConf" 0
                 makeGamesConf
@@ -1877,6 +1937,11 @@ function handle_resmode ()
         fi
     #LOWRES    
     else
+        log_msg "handle_resmode : lowres mode shall be used" 0
+
+        THEME_PATH="/root/themes/themes"
+        log_msg "handle_resmode : set themes path to $THEME_PATH" 0
+
         rm_xist /root/tmp/toggle_highres_done
         # prevents that themes will be overwritten each time.
         if [ -f /root/tmp/toggle_lowres_done ]; then 
@@ -1886,16 +1951,17 @@ function handle_resmode ()
 
             cp $ADVHOME/advmame_lowres.rc $ADVHOME/advmame.rc    
             cp /boot/config_lowres.txt /boot/config.txt
-            cp /root/themes/splash/splash_lowres.png /root/splash.png
-            cp /root/themes/loadingen_lowres.png /root/.lemonlauncher/loadingen.png
-            #cp /root/themes/themes/turrican/* /root/.lemonlauncher
-            cp /root/themes/themes/simple/* /root/.lemonlauncher
-            #cp /root/themes/themes/pb_blue/* /root/.lemonlauncher
+            cp $THEME_PATH/../splash/splash_lowres.png /root/splash.png
+            cp $THEME_PATH/../loadingen_lowres.png /root/.lemonlauncher/loadingen.png
+            cp $THEME_PATH/$THEME/* /root/.lemonlauncher
+            set_config_param2 "THEME"Â"$THEME"
+
             if [ "$ORIENTATION" == "H" ]; then 
                 log_msg "handle_resmode : Call makeGamesConf" 0
                 makeGamesConf
             fi
             cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
+            #cp /root/.lemonlauncher/lemonlauncher.conf /root/config/lemonlauncher_template.conf
 
             log_msg "handle_resmode : Call set_ra_res" 0
             set_ra_res
@@ -1996,7 +2062,22 @@ function handleUsbGamepad () {
     ## todo since the retroarch autoconfig exists this could be reused here.
 }
 
+function init_default_files ()
+{
+    # in case something went wrong while another 
+    # pikeyd165 was active
+    cp /root/config/pikeyd165.conf /etc/pikeyd165.conf
 
+    # there is a background.png_tmp that was not copied back
+    if [ -f ".lemonlauncher/background.png_tmp" ]; then
+        cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+        rm .lemonlauncher/background.png_tmp
+    fi
+
+    if [ -f "$WORK_DIR/roms_advmame" ]; then 
+        mv $work_dir/roms_advmame $work_dir/snaps_advmame
+    fi    
+}
 function main ()
 {
     log_msg "main : Welcome to the main function of Regamebox!" 0
@@ -2016,6 +2097,7 @@ function main ()
     # we have to wait for the initialization of pi2jamma controls
     # then we can interact with the user.
 
+    init_default_files
     # if usb stick has no valid folder rpi2jamma
     # ask user to generate folders
     generate_USB_folder_startup
@@ -2082,6 +2164,8 @@ function main ()
 
     timer "total start" "$before_total"
 
+    #default values
+    
 
 }
 
@@ -2091,6 +2175,8 @@ log_msg "loop : starting the loop!" 0
 
 while [ 1 ]
 do
+
+
     clear_screen
     setterm -cursor off
     log_msg "loop : set_res_lemonlauncher" 0
@@ -2131,13 +2217,33 @@ do
     fi
     #http://derpi.tuwien.ac.at/cgi-bin/man/man2html?1+mpg123
 
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+##########    LEMONLAUNCHER
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
+
+
     # start lemmonlauncher and report back the selected item
     log_msg "loop : start lemonlauncher" 0
 
-    lemonlauncher |grep "Lemonresult:" > tmp/llresult.txt 2>&1 
+    lemonlauncher > tmp/result.txt 2>&1 
+    
+    grep "Lemonresult:" tmp/result.txt > tmp/llresult.txt 2>&1     
+    grep "Lemon_fav:" tmp/result.txt > tmp/fav_result.txt 2>&1
+    cp tmp/result.txt tmp/test.txt
     clear_screen
+     
     
     result=`cat tmp/llresult.txt |awk '{print $4 " " $3}'`
+    result_fav=`cat tmp/fav_result.txt |awk '{print $4 " " $3}'`
+    #result_fav=`cat tmp/fav_result.txt |cut -d":" -f1`
+
 
     log_msg "loop : lemonlauncher gives $result" 0
     
@@ -2146,8 +2252,7 @@ do
     #debug_launcher_result
 
     # ok, decide what to do
-    if [ -n "$result" ]; then
-    
+    if [ -n "$result" ] || [ -n "$result_fav" ]; then
         kill_running mpg123
         #amixer sset PCM,0 $volume% &> /dev/null
         if [ -f config/volume.conf ]; then
@@ -2172,6 +2277,31 @@ do
         
 	    #emulator for console version
         console=`cat tmp/llresult.txt |awk -F ";" '{print $3}'`
+
+
+        ### handle Lemon_fav ####
+        ### lemonlauncher has extra button for fav 
+        ### and spits out Lemon_fav:
+        lemon_fav=`cat tmp/fav_result.txt |cut -d":" -f1`
+
+        if [ "$lemon_fav" == "Lemon_fav" ]; then
+            last_emu=`cat tmp/fav_result.txt |awk -F ";" '{print $3}'`
+            last_game=`echo $result_fav|awk '{print $2}'`
+
+            more $work_dir/favourites.conf | grep "params = \";$last_emu\"" | grep "rom = \"$last_game\"" > tmp/fav_tmp
+            EMPTY=`more tmp/fav_tmp |wc -l`
+            if [ "$EMPTY" -ge "1" ]; then
+                emu="delfav"
+            else
+                emu="addfav"
+            fi
+            log_msg "lemon fav grep found" 0
+            log_msg "last_game : $last_game" 0
+            log_msg "last_emu: $last_emu" 0
+            log_msg "emu: $emu" 0
+        fi
+        ##########################
+
 		
     	# add game to history list
 	    if [ "$HISTORYMODE" == "Y" ]; then
@@ -2207,12 +2337,12 @@ do
             fav_del=$(cat tmp/fav_tmp)
 
             sed -i "/$fav_del*/d" $work_dir/favourites.conf &> /dev/null
-
+            
             hide_fav
             show_fav
             cp .lemonlauncher/games.conf_tmp .lemonlauncher/games.conf
             makeGamesConf
-
+            #./scripts/show_text "Delete Fav $last_game"
         fi
 
         if [ "$emu" == "delfav_short" ]; then
@@ -2226,24 +2356,31 @@ do
 
 
         if [ "$emu" == "addfav" ]; then
+            if [ "$lemon_fav" == "Lemon_fav" ]; then
+
+                log_msg "ll adding favourite" 0
+            fi
             
             rm_xist tmp/fav_tmp
             cat .lemonlauncher/arcade_games.conf .lemonlauncher/console_games.conf > tmp/all_games.conf
-            more tmp/all_games.conf | grep "params = \";$last_emu\"" | grep "rom = \"$last_game\"" >> tmp/fav_tmp
+            more tmp/all_games.conf | grep "params = \";$last_emu\"" | grep "rom = \"$last_game\"" > tmp/fav_tmp
              
             fav_add=$(cat tmp/fav_tmp)
+
             EMPTY=`more tmp/fav_tmp |wc -l`
             if [ "$EMPTY" -ge "1" ]; then
     	        # last in first out
-                log_msg "added $game to fav" 0
+                log_msg "added $last_game to fav" 0
+                sed -i "5i $fav_add" $work_dir/favourites.conf &> /dev/null
 
-                sed -i "5i $fav_add" $work_dir/favourites.conf > /dev/null
-                
                 hide_fav
                 show_fav                
                 cp .lemonlauncher/games.conf_tmp .lemonlauncher/games.conf
                 makeGamesConf
+
             fi
+            #./scripts/show_text "Added Fav $last_game"
+
 	    fi
 
         if [ "$emu" == "addfav_short" ]; then
@@ -2299,7 +2436,7 @@ do
             ## C64 Key Mapping
             
             pikeyd165_stop
-            cp /etc/pikeyd165.conf /etc/pikeyd165_backup.conf
+            cp /etc/pikeyd165.conf /etc/pikeyd165_tmp.conf
             cp /etc/pikeyd165_c64.conf /etc/pikeyd165.conf
             pikeyd165_start
             make_launch "x64 -config /root/.vice/dtv-settings $LAUNCHFILE > /dev/null 2>&1"
@@ -2309,7 +2446,7 @@ do
             
             ## Normal Key Mapping
             pikeyd165_stop
-            cp /etc/pikeyd165_backup.conf /etc/pikeyd165.conf
+            cp /etc/pikeyd165_tmp.conf /etc/pikeyd165.conf
             
         fi
         
@@ -2318,7 +2455,7 @@ do
             cd /root
             log_msg "loop : Starting C64 DTV Emu" 0
             pikeyd165_stop
-            cp /etc/pikeyd165.conf /etc/pikeyd165_backup.conf
+            cp /etc/pikeyd165.conf /etc/pikeyd165_tmp.conf
             cp /etc/pikeyd165_c64.conf /etc/pikeyd165.conf
             pikeyd165_start
             #sleep 10
@@ -2328,7 +2465,7 @@ do
             
             ## Normal Key Mapping
             pikeyd165_stop
-            cp /etc/pikeyd165_backup.conf /etc/pikeyd165.conf
+            cp /etc/pikeyd165_tmp.conf /etc/pikeyd165.conf
         fi
         
         if [ "$console" == "advmame" ]; then
@@ -2345,14 +2482,14 @@ do
             cd /root
             echo "jukebox: " 
             pikeyd165_stop
-            cp /etc/pikeyd165.conf /etc/pikeyd165_backup.conf
+            cp /etc/pikeyd165.conf /etc/pikeyd165_tmp.conf
             cp /etc/pikeyd165_jukebox.conf /etc/pikeyd165.conf
             pikeyd165_start
             make_launch "mpg123 -C -@ $LAUNCHFILE"
             launch_selection
             #quit mpg123?
             pikeyd165_stop
-            cp /etc/pikeyd165_backup.conf /etc/pikeyd165.conf
+            cp /etc/pikeyd165_tmp.conf /etc/pikeyd165.conf
         fi
         
         if [ "$emu" == "retroarch_config" ]; then
@@ -2372,7 +2509,7 @@ do
             ## C64 Key Mapping
             
             pikeyd165_stop
-            cp /etc/pikeyd165.conf /etc/pikeyd165_backup.conf
+            cp /etc/pikeyd165.conf /etc/pikeyd165_tmp.conf
             cp /etc/pikeyd165_c64.conf /etc/pikeyd165.conf
             pikeyd165_start
             
@@ -2380,7 +2517,7 @@ do
             
             ## Normal Key Mapping
             pikeyd165_stop
-            cp /etc/pikeyd165_backup.conf /etc/pikeyd165.conf
+            cp /etc/pikeyd165_tmp.conf /etc/pikeyd165.conf
             
         fi
         
@@ -2488,12 +2625,24 @@ do
 
         if [ "$emu" == "reboot" ]; then
             set_res_default
+            # we are in the options menu
+            if [ -f ".lemonlauncher/background.png_tmp" ]; then
+                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+                rm .lemonlauncher/background.png_tmp
+            fi
+
             log_msg "loop : Reboot" 0
             shutdown -r now
             exit 0
         fi
         
         if [ "$emu" == "shutdown" ]; then
+            # we are probably in the options menu
+            if [ -f ".lemonlauncher/background.png_tmp" ]; then
+                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+                rm .lemonlauncher/background.png_tmp
+            fi
+
             set_res_default
             log_msg "loop : Shutdown" 0
             shutdown -h now
@@ -2607,6 +2756,12 @@ do
         fi
         
         if [ "$emu" == "backup" ]; then
+            # we are in the options menu
+            if [ -f ".lemonlauncher/background.png_tmp" ]; then
+                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+                rm .lemonlauncher/background.png_tmp
+            fi
+
             set_res_default
             echo "An Image will now generated on the connected USB Stick"
             echo "Please wait"
@@ -2676,9 +2831,14 @@ do
         if [ "$emu" == "themes" ]; then
             
             set_res_default
-            cp /root/themes/"$emu"/"$rom"/* /root/.lemonlauncher
+            THEME="$rom"
+            set_config_param2 "THEME" "$THEME"
+
+            #cp /root/themes/"$emu"/"$rom"/* /root/.lemonlauncher
+            cp $THEME_PATH/$THEME/* /root/.lemonlauncher
             # we need a base a config to add USB controller on the fly
             cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
+            #cp /root/.lemonlauncher/lemonlauncher.conf /root/config/lemonlauncher_template.conf
             handleUsbGamepad
             handle_orientation
             log_msg "loop : Launching lowres Theme $rom" 0
@@ -2686,9 +2846,16 @@ do
         if [ "$emu" == "themes_highres" ]; then
             
             set_res_default
-            cp /root/themes/"$emu"/"$rom"/* /root/.lemonlauncher
+            THEME="$rom"
+            set_config_param2 "THEME" "$THEME"
+
+            #cp /root/themes/"$emu"/"$rom"/* /root/.lemonlauncher
+            cp $THEME_PATH/$THEME/* /root/.lemonlauncher
+
             # we need a base a config to add USB controller on the fly
             cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
+            cp /root/.lemonlauncher/lemonlauncher.conf /root/config/lemonlauncher_template.conf
+
             handleUsbGamepad
             handle_orientation
 
@@ -2746,20 +2913,40 @@ do
         if [ "$emu" == "options_conf" ]; then
             cp .lemonlauncher/games.conf .lemonlauncher/games.conf_tmp
             cp frontend/options.conf .lemonlauncher/games.conf
+            if [ -f ".lemonlauncher/background_options.png" ]; then
+                cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
+                cp .lemonlauncher/background_options.png .lemonlauncher/background.png
+            fi
+
         fi
 
         if [ "$emu" == "themes_conf" ]; then
             cp .lemonlauncher/games.conf .lemonlauncher/games.conf_tmp
             cp frontend/themes.conf .lemonlauncher/games.conf
+            if [ -f ".lemonlauncher/background_themes.png" ]; then
+                cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
+                cp .lemonlauncher/background_themes.png .lemonlauncher/background.png
+            fi
+
         fi
 
         if [ "$emu" == "gamelists_conf" ]; then
             cp .lemonlauncher/games.conf .lemonlauncher/games.conf_tmp
             cp frontend/gamelists.conf .lemonlauncher/games.conf
+            if [ -f ".lemonlauncher/background_gamelists.png" ]; then
+                cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
+                cp .lemonlauncher/background_gamelists.png .lemonlauncher/background.png
+            fi
+
         fi
 
         if [ "$emu" == "exitconf" ]; then
             cp .lemonlauncher/games.conf_tmp .lemonlauncher/games.conf
+            if [ -f ".lemonlauncher/background.png_tmp" ]; then
+                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+                # remove to show that the main bg was copied back
+                rm .lemonlauncher/background.png_tmp
+            fi
         fi
 
 
@@ -2897,17 +3084,20 @@ do
         if [ "$emu" == "lock" ]; then
             log_msg "loop : Lock Games" 0
             pikeyd165_stop
-            cp /etc/pikeyd165_lock.conf /etc/pikeyd165.conf
+            cp config/pikeyd165_lock.conf /etc/pikeyd165.conf
         fi
 
         if [ "$emu" == "unlock" ]; then
             log_msg "loop : Unlock Games" 0
             pikeyd165_stop
-            cp /etc/pikeyd165_unlock.conf /etc/pikeyd165.conf      
+            cp config/pikeyd165_unlock.conf /etc/pikeyd165.conf      
         fi
 
         if [ "$emu" == "usb_gamepad_wizard" ]; then
-            set_res_default
+            # res default is for cmd based stuff
+            # if new res is needed put to custom res table
+            # and use launch_resolution "name" 
+            #set_res_default
             log_msg "loop : USB Gamepad wizard" 0
             usb_gamepad_wizard
         fi
@@ -3002,12 +3192,12 @@ do
             set_res_default
             cd /root
             pikeyd165_stop
-            cp /etc/pikeyd165.conf /etc/pikeyd165_backup.conf
+            cp /etc/pikeyd165.conf /etc/pikeyd165_tmp.conf
             cp /etc/pikeyd165_jukebox.conf /etc/pikeyd165.conf
             pikeyd165_start
             tail -n 100 log.txt |less
             pikeyd165_stop
-            cp /etc/pikeyd165_backup.conf /etc/pikeyd165.conf
+            cp /etc/pikeyd165_tmp.conf /etc/pikeyd165.conf
         fi
 
         if [ "$emu" == "show_mode" ]; then
@@ -3035,6 +3225,12 @@ do
 
         # Toggle between german and english keyboard layout
         if [ "$emu" == "setkeyboardde" ]; then
+            # we are in the options menu
+            if [ -f ".lemonlauncher/background.png_tmp" ]; then
+                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+                rm .lemonlauncher/background.png_tmp
+            fi
+
             log_msg "loop: set german key layout" 0
             cp /etc/vconsole_de.conf /etc/vconsole.conf
             shutdown -r now
@@ -3042,6 +3238,13 @@ do
 
         # Toggle between german and english keyboard layout
         if [ "$emu" == "setkeyboardgb" ]; then
+
+            # we are in the options menu
+            if [ -f ".lemonlauncher/background.png_tmp" ]; then
+                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+                rm .lemonlauncher/background.png_tmp
+            fi
+
             log_msg "loop : set uk key layout" 0
             cp /etc/vconsole_gb.conf /etc/vconsole.conf
             shutdown -r now
@@ -3049,6 +3252,12 @@ do
 
         # Toggle between german and english keyboard layout
         if [ "$emu" == "setkeyboardus" ]; then
+            # we are in the options menu
+            if [ -f ".lemonlauncher/background.png_tmp" ]; then
+                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+                rm .lemonlauncher/background.png_tmp
+            fi
+
             log_msg "loop : set us key layout" 0
             cp /etc/vconsole_us.conf /etc/vconsole.conf
             shutdown -r now
@@ -3056,6 +3265,13 @@ do
 
         # Toggle between german and english keyboard layout
         if [ "$emu" == "setkeyboardfr" ]; then
+
+            # we are in the options menu
+            if [ -f ".lemonlauncher/background.png_tmp" ]; then
+                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+                rm .lemonlauncher/background.png_tmp
+            fi
+
             log_msg "loop : set fr key layout" 0
             cp /etc/vconsole_fr.conf /etc/vconsole.conf
             shutdown -r now
