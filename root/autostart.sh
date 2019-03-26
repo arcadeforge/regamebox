@@ -8,16 +8,70 @@
 # todo download snap
 # todo rename folder rpi2jamma/roms_advmame to rpi2jamma/snaps_advmame if exists
 # todo poll usb controllers for automatic config
+# todo refactor favourites
+# todo refactor theme handling pathes
+# todo theme list generator
+# todo transfer lfbalpha remaps to mame2003 et al.
 
+# reboot, handle_or pfad snaps und video wird ueberschrieben
+# theme change test, default orientation
 
 # KNOW BUGS : menu issue. Exit game jumps from gamelist in history. Fix hash in lemonlauncher
 # retroarch bug : Failed saving when core is active. goto quick menu, close content, make settings again and goto configuration, save configuration
 #     appears in mame2003 and mame2003plus
 
+################################
+#    here is the work log      #
+################################
+
 # regamebox - by Jochen Zurborg
+### version 2.6.1
+# added pkill omxplayer before main loop to prevent fbuffer theft
+# added patch handling
+### version 2.6.1
+# added scripts flip_vert.sh and flip_hori.sh for handling flipped
+#    horitzontal and vertical themes
+# added patch.sh for even patching autostart.sh
+# added fav button start p1 to all themes
+
+
 ### version 2.6
+# change 22.03.2019
+# using now enter and backspace for p1b1 and p1b2
+# bug fixes for changing themes when switch horizontal vertical
+# change omxplayer orientation when switch horizontal vertical
+# added hdmi_timings in /boot/config.txt
+
+
+# change 20.03.2019
+# 
+# fixed samples bug for mame2003-plus. Please put sample folder in 
+#     mame2003plus folder. Currently in /mnt/ntfs/rpi2jamma/arcade/samples
+#     This should be somewhere else fixme
+# checked highres themes
+# added scale_img programm for working with themes
+# A menu folder can now be added in the theme folder for own menu snaps. 
+#     Please check /root/themes/themes/simple 
+# bug fixes for theme parameter
+# added KEY_ENTER and KEY_BACKSPACE to p1b1 and p1b2 for navigating retroach
+#      menu. Please test
+# added F1 = p1start and p1b2 to pikeyd165, so retroarch 
+#      can be accessed without keyboard
+
+# change 19.03.2019
+# hide text message on boot up
+# added clean wifi connectors to deploy
+# throwing out extra backgrounds for options, gamelists and stuff 
+ 
+# change 18.03.2019 
+# reworked all themes with video snaps!
+# added scripts add_video_config.sh
+# added omxplayer rotation for vertical screens
+
 # change 15.03.2019
-# added feature init or recovery for from tmp files like pikeyd165 or background 
+# moved templates to config folder
+# added feature init or recovery for from tmp files 
+#   like pikeyd165 or background, lemonlauncher template 
 # bug fixed theme handling
 # added feature for theme with dedicated backgrounds for background_gamelists.png, background_options.png, background_themes.png 
 # added script show_text on framebuffer
@@ -227,7 +281,7 @@
 # TODO
 # - delayed start of timesyncd services
 
-VERSION="Regamebox v2.6 work 20190313"
+VERSION="Regamebox v2.6 work 20190319"
 # T for Time measures and Y for debugging
 #DEBUG="T"
 #DEBUG="N"
@@ -259,6 +313,10 @@ retroarch_cores="$retroarch_folder/cores"
 
 database="/root/databases"
 ctrl_path="/root/usb_controller"
+
+ll_template="/root/config/lemonlauncher_template.conf"
+ll_conf="/root/.lemonlauncher/lemonlauncher.conf"
+ll_path="/root/.lemonlauncher"
 
 ORIENTATION="H"
 ORIENTATION_V="left"
@@ -521,6 +579,7 @@ function set_res_lemonlauncher ()
 
         tvservice -e  "DMT 87" > /dev/null
 	    fbset -depth 8 && fbset -depth 24 -xres 320 -yres 240 > /dev/null
+
     fi
 }
 
@@ -538,26 +597,53 @@ function handle_orientation () {
         sed -i "/display_rol/d" "$ADVHOME/advmame_highres.rc"
     
         if [ "$ORIENTATION_H" == "normal" ]; then
+
+
             log_msg "handle_orientation : Horizontal Screen in normal direction." 0
             log_msg "handle_orientation : rotation=0." 0
             rotation="0"
 
-            # no entry for advmame.rc means normal orientation
+            #intro video
+            sed -i "s/omxplayer .*\/root/omxplayer --orientation 0 \/root/g" /usr/lib/systemd/system/splash.service
+            log_msg "handle_orientation : omxplayer orientation 0." 0
 
+            # no entry for advmame.rc means normal orientation
             sed -i "/display_orientation*/d" "$ADVHOME/advmenu.rc"
             echo "display_orientation" >> "$ADVHOME/advmenu.rc"
 
             sed -i "/video_rotation*/d" "$retroarch_conf"
             echo "video_rotation = \"$rotation\" " >> "$retroarch_conf"
 
-            sed -i "s/rotate.*/rotate = \"none\" /g" /root/.lemonlauncher/lemonlauncher.conf
-            sed -i "s/rotate.*/rotate = \"none\" /g" /root/.lemonlauncher/lemonlauncher_template.conf
+            # lemonlauncher
+            # copy the theme again to have the base values
+
+            if [ ! -e "$THEME_PATH_LOWRES/$THEME" ]; then
+                cp $THEME_PATH_HIGHRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+            else
+                cp $THEME_PATH_LOWRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+            fi
+
+            sed -i "s/rotate.*/rotate = \"none\" /g" $ll_conf
+            sed -i "s/rotate.*/rotate = \"none\" /g" $ll_template
+
+            sed -i "s/video_orientation.*/video_orientation = 0/g" $ll_conf
+            sed -i "s/video_orientation.*/video_orientation = 0/g" $ll_template
+
+            grep video_orientation $ll_conf
+            if [ $? == 1 ]; then
+                echo "video_orientation = 0" >> $ll_conf
+                echo "video_orientation = 0" >> $ll_template
+            fi
 
 
         else # flip
             log_msg "handle_orientation : Horizontal Screen in flipped direction." 0
             log_msg "handle_orientation : rotation=90." 0
             rotation="90"
+
+            # intro video
+            sed -i "s/omxplayer .*\/root/omxplayer --orientation 180 \/root/g" /usr/lib/systemd/system/splash.service
+            log_msg "handle_orientation : omxplayer orientation 180." 0
 
             # no clue how to rotate screen in advmame 90degree.
             #echo "horizontal/display_ror yes" >> $ADVHOME/advmame.rc
@@ -566,17 +652,34 @@ function handle_orientation () {
             sed -i "/video_rotation*/d" "$retroarch_conf"
             echo "video_rotation = \"$rotation\"" >> "$retroarch_conf"
 
-            sed -i "s/rotate.*/rotate = \"flip\" /g" /root/.lemonlauncher/lemonlauncher.conf
-            sed -i "s/rotate.*/rotate = \"flip\" /g" /root/.lemonlauncher/lemonlauncher_template.conf
+            /root/scripts/flip_hori.sh $ll_path
+            
+            #sed -i "s/rotate.*/rotate = \"flip\" /g" $ll_conf
+            #sed -i "s/rotate.*/rotate = \"flip\" /g" 
+
+            #sed -i "s/video_orientation.*/video_orientation = 180/g" $ll_conf
+            #sed -i "s/video_orientation.*/video_orientation = 180/g" $ll_template
+
+            #grep video_orientation $ll_conf
+            #if [ $? == 1 ]; then
+            #    echo "video_orientation = 180" >> $ll_conf
+            #    echo "video_orientation = 180" >> $ll_template
+            #fi
 
         fi
     else
 
         log_msg "handle_orientation : Vertical Screen is configured." 0
+
         if [ "$ORIENTATION_V" == "left" ]; then
+
+
             log_msg "handle_orientation : Vertical Screen in normal direction." 0
             log_msg "handle_orientation : rotation=45." 0
             rotation="45"
+
+            sed -i "s/omxplayer .*\/root/omxplayer --orientation 270 \/root/g" /usr/lib/systemd/system/splash.service
+            log_msg "handle_orientation : omxplayer orientation 270." 0
 
             sed -i "/display_orientation*/d" "$ADVHOME/advmenu.rc"
             echo "display_orientation flip_xy mirror_y" >> "$ADVHOME/advmenu.rc"
@@ -591,15 +694,29 @@ function handle_orientation () {
             sed -i "/video_rotation*/d" "$retroarch_conf"
             echo "video_rotation = \"$rotation\"" >> "$retroarch_conf"
 
-            sed -i "s/rotate.*/rotate = \"right\" /g" /root/.lemonlauncher/lemonlauncher.conf
-            sed -i "s/rotate.*/rotate = \"right\" /g" /root/.lemonlauncher/lemonlauncher_template.conf
+            #sed -i "s/rotate.*/rotate = \"right\" /g" $ll_conf
+            #sed -i "s/video_orientation.*/video_orientation = 270/g" $ll_conf
+
+
+            # copy the theme again to have the base values
+            if [ ! -e "$THEME_PATH_LOWRES/$THEME" ]; then
+                cp $THEME_PATH_HIGHRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+            else
+                cp $THEME_PATH_LOWRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1            
+            fi
+
 
 
         else
+
+            /root/scripts/flip_vert.sh $ll_path
+
             log_msg "handle_orientation : Vertical Screen in flipped direction." 0
             log_msg "handle_orientation : rotation=135." 0
             rotation="135"
 
+            sed -i "s/omxplayer .*\/root/omxplayer --orientation 90 \/root/g" /usr/lib/systemd/system/splash.service
+            log_msg "handle_orientation : omxplaye orientation 90." 0
           
             sed -i "/display_orientation*/d" "$ADVHOME/advmenu.rc"
             echo "display_orientation flip_xy mirror_y" >> $ADVHOME/advmenu.rc
@@ -614,13 +731,20 @@ function handle_orientation () {
 
             sed -i "/video_rotation*/d" "$retroarch_conf"
             echo "video_rotation = \"$rotation\"" >> "$retroarch_conf"
-            
-            sed -i "s/rotate.*/rotate = \"left\" /g" /root/.lemonlauncher/lemonlauncher.conf
-            sed -i "s/rotate.*/rotate = \"left\" /g" /root/.lemonlauncher/lemonlauncher_template.conf
+        
+    
+            #sed -i "s/rotate.*/rotate = \"left\" /g" $ll_conf
+            #sed -i "s/rotate.*/rotate = \"left\" /g" $ll_template
+
+            #sed -i "s/video_orientation.*/video_orientation = 90/g" $ll_conf
+            #sed -i "s/video_orientation.*/video_orientation = 90/g" $ll_template
 
         fi
         
     fi 
+    set_ll_media_path
+    cp $ll_conf $ll_template
+
 }
 
 # Since retroarch has dozen ways to introduce new 
@@ -1103,12 +1227,14 @@ function set_config_param2() {
 
     param=$1
     new_value=$2
-    
+    # if user forget to set var ;)
+    $param=$new_value
+
     if grep -q "$param" $config_file; then  
-        sed -i "$param/d" $config_file
+        sed -i "/$param/d" $config_file
     fi
-    echo "/$param=\"$new_value\"" >> $config_file
-    log_msg "set_config_param : set $param to $new_value" 0
+    echo "$param=\"$new_value\"" >> $config_file
+    log_msg "set_config_param2 : set $param to $new_value" 0
 
 }
 
@@ -1159,15 +1285,21 @@ function read_config_files ()
     if [ "$RESMODE" == "LOW" ]; then
         source $config_folder/retroarch_lowres.conf
         log_msg "read_config_files : Reading default retroarch lowres settings from $config_folder/retroarch_lowres.conf" 0
-        THEME_PATH="THEME_PATH_LOWRES"        
+        THEME_PATH="$THEME_PATH_LOWRES"        
     else
         source $config_folder/retroarch_highres.conf
         log_msg "read_config_files : Reading default retroarch highres settings $config_folder/retroarch_highres.conf" 0
         THEME_PATH="$THEME_PATH_HIGHRES"
     fi
     log_msg "read_config_files : set themes path to $THEME_PATH" 0    
-    cp $THEME_PATH/$THEME/* /root/.lemonlauncher
-    cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
+
+    if [ ! -e "$THEME_PATH_LOWRES/$THEME" ]; then
+        cp $THEME_PATH_HIGHRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+    else
+        cp $THEME_PATH_LOWRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+    fi
+
+    cp $ll_conf $ll_template
     
     log_msg "read_config_files : set theme $THEME" 0    
     log_msg "read_config_files : cp $THEME_PATH/$THEME/* /root/.lemonlauncher" 0    
@@ -1190,6 +1322,9 @@ function read_config_files ()
     if [ "$PI2SCART" == "A" ]; then
         log_msg "read_config_file : Automatic check if pi2scart or pi2jamma is installed" 0 
         log_msg "read_config_file : turn pi2jamma driver on to see if unwanted key presses comes." 0 
+        if [ "$DEBUG" == "N" ]; then
+            setterm --foreground black --cursor off --blink off
+        fi
         pikeyd165_start
         #sleep 0.5
         sleep 1
@@ -1204,6 +1339,7 @@ function read_config_files ()
             PI2SCART="N"
         fi
         log_msg "read_config_files : Auto config pi2scart=$PI2SCART" 0
+
             
     # otherwise let user decide
     else
@@ -1292,6 +1428,22 @@ function set_remap ()
 
 }
 
+# we have themes via config. 
+# So adapt pathes after config is read
+
+function set_ll_media_path ()
+{
+    if [ $USBSTICK == "Y" ]; then
+        
+    	sed -i "s/home\/x/mnt\/sda/g" $ll_conf
+        sed -i "s/home\/x/mnt\/sda/g" $ll_template
+    else
+	    sed -i "s/mnt\/sda/home\/x/g" $ll_conf
+	    sed -i "s/mnt\/sda/home\/x/g" $ll_template
+    fi
+    log_msg "set_work_dir : lemonlauncher folder was set for $work_dir" 0
+
+}
 function set_work_dir ()
 {
     log_msg "set_work_dir : Setting the working dirs in the various config files." 0
@@ -1302,14 +1454,10 @@ function set_work_dir ()
         work_dir="$USB_PATH"
 	
         sed -i "s/home\/x/mnt\/sda/g" .advance/advmame.rc
-    	sed -i "s/home\/x/mnt\/sda/g" .lemonlauncher/lemonlauncher.conf
-    	sed -i "s/home\/x/mnt\/sda/g" .lemonlauncher/lemonlauncher_template.conf
     else
         console_roms="$SD_PATH/roms"
         work_dir="$SD_PATH"
     	sed -i "s/mnt\/sda/home\/x/g" .advance/advmame.rc
-	    sed -i "s/mnt\/sda/home\/x/g" .lemonlauncher/lemonlauncher.conf
-	    sed -i "s/mnt\/sda/home\/x/g" .lemonlauncher/lemonlauncher_template.conf
     fi
     log_msg "set_work_dir : Console ROM dir is `echo $console_roms`" 0
     log_msg "set_work_dir : Work dir is `echo $work_dir`" 0
@@ -1914,14 +2062,24 @@ function handle_resmode ()
             log_msg "handle_resmode : Toggle to highres" 0
 
             cp $ADVHOME/advmame_highres.rc $ADVHOME/advmame.rc
+            cp /boot/config.txt /boot/config.txt_BAK
+
             cp /boot/config_highres.txt /boot/config.txt
             cp $THEME_PATH/../splash/splash_highres.png /root/splash.png
             cp $THEME_PATH/../loadingen_highres.png /root/.lemonlauncher/loadingen.png
-            cp $THEME_PATH/$THEME/* /root/.lemonlauncher
-            set_config_param2 "THEME"Â"$THEME"
 
-            cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
-            #cp /root/.lemonlauncher/lemonlauncher.conf /root/config/lemonlauncher_template.conf
+            #fixme
+            if [ ! -e "$THEME_PATH_LOWRES/$THEME" ]; then
+                cp $THEME_PATH_HIGHRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+            else
+                cp $THEME_PATH_LOWRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+            fi
+            cp $ll_conf $ll_template
+            
+            #set_config_param2 THEME $THEME 
+
+            #cp $ll_conf /root/.lemonlauncher/lemonlauncher_template.conf
+            cp $ll_conf $ll_template
             if [ "$ORIENTATION" == "H" ]; then 
                 log_msg "handle_resmode : Call makeGamesConf" 0
                 makeGamesConf
@@ -1950,18 +2108,28 @@ function handle_resmode ()
             log_msg "handle_resmode : Toggle to lowres" 0
 
             cp $ADVHOME/advmame_lowres.rc $ADVHOME/advmame.rc    
+            cp /boot/config.txt /boot/config.txt_BAK
             cp /boot/config_lowres.txt /boot/config.txt
             cp $THEME_PATH/../splash/splash_lowres.png /root/splash.png
             cp $THEME_PATH/../loadingen_lowres.png /root/.lemonlauncher/loadingen.png
-            cp $THEME_PATH/$THEME/* /root/.lemonlauncher
-            set_config_param2 "THEME"Â"$THEME"
+            #fixme
+            if [ ! -e "$THEME_PATH_LOWRES/$THEME" ]; then
+                cp $THEME_PATH_HIGHRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+            else
+                cp $THEME_PATH_LOWRES/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+            fi
+            cp $ll_conf $ll_template
+
+            #cp $THEME_PATH/$THEME/* /root/.lemonlauncher > /dev/null 2>&1
+
+            #set_config_param2 THEMEÂ$THEME
 
             if [ "$ORIENTATION" == "H" ]; then 
                 log_msg "handle_resmode : Call makeGamesConf" 0
                 makeGamesConf
             fi
-            cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
-            #cp /root/.lemonlauncher/lemonlauncher.conf /root/config/lemonlauncher_template.conf
+            #cp $ll_conf /root/.lemonlauncher/lemonlauncher_template.conf
+            cp $ll_conf $ll_template
 
             log_msg "handle_resmode : Call set_ra_res" 0
             set_ra_res
@@ -2052,7 +2220,8 @@ function handleUsbGamepad () {
     change_ra_param_set "$ctrl_path/$USB_GAMEPAD"
     rm tmp/gamepad/* > /dev/null 2>&1
     touch tmp/gamepad/$USB_GAMEPAD
-    cat .lemonlauncher/lemonlauncher_template.conf .lemonlauncher/lemonlauncher_$USB_GAMEPAD.cfg > .lemonlauncher/lemonlauncher.conf        
+    #cat .lemonlauncher/lemonlauncher_template.conf .lemonlauncher/lemonlauncher_$USB_GAMEPAD.cfg > .lemonlauncher/lemonlauncher.conf        
+    cat $ll_template .lemonlauncher/lemonlauncher_$USB_GAMEPAD.cfg > .lemonlauncher/lemonlauncher.conf        
 
     # automatic settings for remaps?
 	#if [ "$USB_GAMEPAD" = "nousb" ] ; then
@@ -2062,6 +2231,15 @@ function handleUsbGamepad () {
     ## todo since the retroarch autoconfig exists this could be reused here.
 }
 
+function copy_background_tmp ()
+{
+   if [ -f ".lemonlauncher/background.png_tmp" ]; then
+        cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
+        rm .lemonlauncher/background.png_tmp
+    fi
+
+}
+
 function init_default_files ()
 {
     # in case something went wrong while another 
@@ -2069,10 +2247,7 @@ function init_default_files ()
     cp /root/config/pikeyd165.conf /etc/pikeyd165.conf
 
     # there is a background.png_tmp that was not copied back
-    if [ -f ".lemonlauncher/background.png_tmp" ]; then
-        cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-        rm .lemonlauncher/background.png_tmp
-    fi
+    copy_background_tmp
 
     if [ -f "$WORK_DIR/roms_advmame" ]; then 
         mv $work_dir/roms_advmame $work_dir/snaps_advmame
@@ -2096,6 +2271,8 @@ function main ()
 	timer "main : read_config_files" "$before"
     # we have to wait for the initialization of pi2jamma controls
     # then we can interact with the user.
+
+	set_ll_media_path
 
     init_default_files
     # if usb stick has no valid folder rpi2jamma
@@ -2171,6 +2348,8 @@ function main ()
 
 main
 
+pkill omxplayer
+
 log_msg "loop : starting the loop!" 0
 
 while [ 1 ]
@@ -2178,7 +2357,7 @@ do
 
 
     clear_screen
-    setterm -cursor off
+    setterm --cursor off
     log_msg "loop : set_res_lemonlauncher" 0
     
     set_res_lemonlauncher
@@ -2371,7 +2550,7 @@ do
             if [ "$EMPTY" -ge "1" ]; then
     	        # last in first out
                 log_msg "added $last_game to fav" 0
-                sed -i "5i $fav_add" $work_dir/favourites.conf &> /dev/null
+                sed -i "5i $fav_add" $work_dir/favourites.conf > /dev/null 2>&1
 
                 hide_fav
                 show_fav                
@@ -2531,7 +2710,7 @@ do
             
             # needed for test
             clear_screen
-            setterm -cursor on
+            setterm --foreground white --cursor on
 
             exit 0
         fi
@@ -2625,11 +2804,6 @@ do
 
         if [ "$emu" == "reboot" ]; then
             set_res_default
-            # we are in the options menu
-            if [ -f ".lemonlauncher/background.png_tmp" ]; then
-                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-                rm .lemonlauncher/background.png_tmp
-            fi
 
             log_msg "loop : Reboot" 0
             shutdown -r now
@@ -2638,10 +2812,6 @@ do
         
         if [ "$emu" == "shutdown" ]; then
             # we are probably in the options menu
-            if [ -f ".lemonlauncher/background.png_tmp" ]; then
-                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-                rm .lemonlauncher/background.png_tmp
-            fi
 
             set_res_default
             log_msg "loop : Shutdown" 0
@@ -2756,11 +2926,6 @@ do
         fi
         
         if [ "$emu" == "backup" ]; then
-            # we are in the options menu
-            if [ -f ".lemonlauncher/background.png_tmp" ]; then
-                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-                rm .lemonlauncher/background.png_tmp
-            fi
 
             set_res_default
             echo "An Image will now generated on the connected USB Stick"
@@ -2796,7 +2961,7 @@ do
             cp $ADVHOME/advmenu.rc /mnt/sda/config
             cp -r /root/.vice /mnt/sda/config
             cp /etc/pikeyd165.conf /mnt/sda/config
-            cp /root/.lemonlauncher/lemonlauncher.conf /mnt/sda/config
+            cp $ll_conf /mnt/sda/config
             cp /root/log.txt /mnt/sda/config
             cd /mnt/sda 
             tar czf config_pi2jamma_$(date +%Y%m%d).tgz config
@@ -2812,7 +2977,7 @@ do
             cp $ADVHOME/advmenu.rc /mnt/sda/backup_config
             cp -r /root/.vice /mnt/sda/backup_config
             cp /etc/pikeyd165.conf /mnt/sda/backup_config
-            cp /root/.lemonlauncher/lemonlauncher.conf /mnt/sda/backup_config
+            cp $ll_conf /mnt/sda/backup_config
             cp /root/log.txt /mnt/sda/backup_config
             
             tar xcf /mnt/sda/config_pi2jamma.tgz 
@@ -2832,32 +2997,46 @@ do
             
             set_res_default
             THEME="$rom"
-            set_config_param2 "THEME" "$THEME"
+            set_config_param2 THEME $THEME
 
-            #cp /root/themes/"$emu"/"$rom"/* /root/.lemonlauncher
-            cp $THEME_PATH/$THEME/* /root/.lemonlauncher
+            cp /root/themes/"$emu"/"$rom"/* /root/.lemonlauncher > /dev/null 2>&1
+            # we want lowres theme on highres setups
+            # cp $THEME_PATH/$THEME/* /root/.lemonlauncher
+            # copy menu images
+            if [ -e "/root/themes/"$emu"/"$rom"/menu" ]; then
+                log_msg "loop : Copied lowres Theme menu $rom" 0
+                cp /root/themes/"$emu"/"$rom"/menu/* $work_dir/snaps
+            fi
             # we need a base a config to add USB controller on the fly
-            cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
-            #cp /root/.lemonlauncher/lemonlauncher.conf /root/config/lemonlauncher_template.conf
+            #cp $ll_conf /root/.lemonlauncher/lemonlauncher_template.conf
+            cp $ll_conf $ll_template
             handleUsbGamepad
             handle_orientation
+            set_ll_media_path
             log_msg "loop : Launching lowres Theme $rom" 0
         fi    
         if [ "$emu" == "themes_highres" ]; then
             
             set_res_default
             THEME="$rom"
-            set_config_param2 "THEME" "$THEME"
+            set_config_param2 THEME $THEME
+            cp /root/themes/"$emu"/"$rom"/* /root/.lemonlauncher > /dev/null 2>&1
 
-            #cp /root/themes/"$emu"/"$rom"/* /root/.lemonlauncher
-            cp $THEME_PATH/$THEME/* /root/.lemonlauncher
+            #cp $THEME_PATH/$THEME/* /root/.lemonlauncher
+            # copy menu images
+            if [ -f "/root/themes/"$emu"/"$rom"/menu" ]; then
+                log_msg "loop : Copied highres Theme menu $rom" 0
+                cp /root/themes/"$emu"/"$rom"/menu/* $work_dir/snaps
+            fi
+
 
             # we need a base a config to add USB controller on the fly
-            cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf
-            cp /root/.lemonlauncher/lemonlauncher.conf /root/config/lemonlauncher_template.conf
+            #cp $ll_conf /root/.lemonlauncher/lemonlauncher_template.conf
+            cp $ll_conf $ll_template
 
             handleUsbGamepad
             handle_orientation
+            set_ll_media_path
 
             log_msg "loop : Launching highres Theme $rom" 0
         fi    
@@ -2913,40 +3092,36 @@ do
         if [ "$emu" == "options_conf" ]; then
             cp .lemonlauncher/games.conf .lemonlauncher/games.conf_tmp
             cp frontend/options.conf .lemonlauncher/games.conf
-            if [ -f ".lemonlauncher/background_options.png" ]; then
-                cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
-                cp .lemonlauncher/background_options.png .lemonlauncher/background.png
-            fi
+            #if [ -f ".lemonlauncher/background_options.png" ]; then
+            #    cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
+            #    cp .lemonlauncher/background_options.png .lemonlauncher/background.png
+            #fi
 
         fi
 
         if [ "$emu" == "themes_conf" ]; then
             cp .lemonlauncher/games.conf .lemonlauncher/games.conf_tmp
             cp frontend/themes.conf .lemonlauncher/games.conf
-            if [ -f ".lemonlauncher/background_themes.png" ]; then
-                cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
-                cp .lemonlauncher/background_themes.png .lemonlauncher/background.png
-            fi
+            #if [ -f ".lemonlauncher/background_themes.png" ]; then
+            #    cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
+            #    cp .lemonlauncher/background_themes.png .lemonlauncher/background.png
+            #fi
 
         fi
 
         if [ "$emu" == "gamelists_conf" ]; then
             cp .lemonlauncher/games.conf .lemonlauncher/games.conf_tmp
             cp frontend/gamelists.conf .lemonlauncher/games.conf
-            if [ -f ".lemonlauncher/background_gamelists.png" ]; then
-                cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
-                cp .lemonlauncher/background_gamelists.png .lemonlauncher/background.png
-            fi
+            #if [ -f ".lemonlauncher/background_gamelists.png" ]; then
+            #    cp .lemonlauncher/background.png .lemonlauncher/background.png_tmp
+            #    cp .lemonlauncher/background_gamelists.png .lemonlauncher/background.png
+            #fi
 
         fi
 
         if [ "$emu" == "exitconf" ]; then
             cp .lemonlauncher/games.conf_tmp .lemonlauncher/games.conf
-            if [ -f ".lemonlauncher/background.png_tmp" ]; then
-                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-                # remove to show that the main bg was copied back
-                rm .lemonlauncher/background.png_tmp
-            fi
+            #copy_background_tmp
         fi
 
 
@@ -3041,22 +3216,36 @@ do
                 set_mode "Switch to Vertical Screen" "Switch to Horizontal Screen" "ORIENTATION" "H" "V"
                 
                 # copy default V theme
-                cp /root/themes/themes/simple-vert/* /root/.lemonlauncher
-                cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf 
-
-
+                cp /root/themes/themes/tron-arcade-vert/* /root/.lemonlauncher
+                #cp $ll_conf /root/.lemonlauncher/lemonlauncher_template.conf 
+                cp $ll_conf $ll_template 
+                set_config_param2 THEME tron-arcade-vert 
+                set_ll_media_path
+                log_msg "togglehv : set to vertical orientation" 0
             else
                 ORIENTATION="H"
-                #cp /root/.lemonlauncher/lemonlauncherV.conf /root/.lemonlauncher/lemonlauncher.conf 
+                #cp /root/.lemonlauncher/lemonlauncherV.conf $ll_conf 
                 set_mode "Switch to Horizontal Screen" "Switch to Vertical Screen" "ORIENTATION" "V" "H"
                 
                 #copy default themes
-                if [ "$RESMODE" == "LOW" ]; then
-                    cp /root/themes/themes/simple/* /root/.lemonlauncher
+                cp /root/themes/themes/tron-theme/* /root/.lemonlauncher
+                #cp $ll_conf /root/.lemonlauncher/lemonlauncher_template.conf 
+                cp $ll_conf $ll_template 
+                set_config_param2 THEME tron-theme 
+                set_ll_media_path
+                # change intro video orientation
+                if [ "$ORIENTATION_H" == "normal" ]; then
+                    #sed -i "s/omxplayer --orientation 270/omxplayer/g" /usr/lib/systemd/system/splash.service
+                    sed -i "s/omxplayer .*\/root/omxplayer --orientation 0 \/root/g" /usr/lib/systemd/system/splash.service
+
                 else
-	                cp /root/themes/themes_highres/turrican/* /root/.lemonlauncher
+                    sed -i "s/omxplayer .*\/root/omxplayer --orientation 180 \/root/g" /usr/lib/systemd/system/splash.service
+
+                    #sed -i "s/omxplayer/omxplayer --orientation 180/g" /usr/lib/systemd/system/splash.service
                 fi
-                cp /root/.lemonlauncher/lemonlauncher.conf /root/.lemonlauncher/lemonlauncher_template.conf 
+
+                log_msg "togglehv : set to horizontal orientation" 0
+
 
             fi
 
@@ -3225,12 +3414,6 @@ do
 
         # Toggle between german and english keyboard layout
         if [ "$emu" == "setkeyboardde" ]; then
-            # we are in the options menu
-            if [ -f ".lemonlauncher/background.png_tmp" ]; then
-                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-                rm .lemonlauncher/background.png_tmp
-            fi
-
             log_msg "loop: set german key layout" 0
             cp /etc/vconsole_de.conf /etc/vconsole.conf
             shutdown -r now
@@ -3238,13 +3421,6 @@ do
 
         # Toggle between german and english keyboard layout
         if [ "$emu" == "setkeyboardgb" ]; then
-
-            # we are in the options menu
-            if [ -f ".lemonlauncher/background.png_tmp" ]; then
-                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-                rm .lemonlauncher/background.png_tmp
-            fi
-
             log_msg "loop : set uk key layout" 0
             cp /etc/vconsole_gb.conf /etc/vconsole.conf
             shutdown -r now
@@ -3252,12 +3428,6 @@ do
 
         # Toggle between german and english keyboard layout
         if [ "$emu" == "setkeyboardus" ]; then
-            # we are in the options menu
-            if [ -f ".lemonlauncher/background.png_tmp" ]; then
-                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-                rm .lemonlauncher/background.png_tmp
-            fi
-
             log_msg "loop : set us key layout" 0
             cp /etc/vconsole_us.conf /etc/vconsole.conf
             shutdown -r now
@@ -3265,13 +3435,6 @@ do
 
         # Toggle between german and english keyboard layout
         if [ "$emu" == "setkeyboardfr" ]; then
-
-            # we are in the options menu
-            if [ -f ".lemonlauncher/background.png_tmp" ]; then
-                cp .lemonlauncher/background.png_tmp .lemonlauncher/background.png
-                rm .lemonlauncher/background.png_tmp
-            fi
-
             log_msg "loop : set fr key layout" 0
             cp /etc/vconsole_fr.conf /etc/vconsole.conf
             shutdown -r now
