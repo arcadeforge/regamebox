@@ -1,0 +1,279 @@
+# regamebox - by Jochen Zurborg
+
+### version 2.7
+# change 04.04.2019
+# bugfix black font color making set volume menu invisible ;)
+# added set video volume menu item plus script set_video_volume
+# refactor favourites
+# refactor theme handling pathes
+# added download snap featrues with interface to wiki regamebox.com
+# added download patch feature
+# added edit vertical game list
+# added scripts megadl_media.sh and megadl_patch.sh
+# bugfix tvservice for prepare_theme.sh
+# changed audio volume level for intro video
+# integrated online patches in patch.sh
+
+# change 03.04.2019
+# bugfix b1 and b2 for enter and backspace advmame
+# reworked again all themes
+# integrated scaler for lemonlauncher
+
+# change 02.04.2019
+# edit key bugfix to /root/config/pikeyd615.conf
+
+# change 22.03. - 29.03.2019
+# COMPLETELY reworked theme handling with a new script prepare_theme.sh
+# updated the disable wifi function by deleting all wlan configs in 
+#    in /etc/netctl/
+# added pkill omxplayer before main loop to prevent fbuffer theft
+# added scripts flip_vert.sh and flip_hori.sh for handling flipped
+#    horitzontal and vertical themes
+# added patch.sh for even patching autostart.sh
+# added fav button start p1 to all themes
+# optimized themes
+# highres theme survive reboot
+# reworked theme handling and throw out double parameter solution
+
+### version 2.6
+
+# change 22.03.2019
+# using now enter and backspace for p1b1 and p1b2
+# bug fixes for changing themes when switch horizontal vertical
+# change omxplayer orientation when switch horizontal vertical
+# added hdmi_timings in /boot/config.txt
+
+
+# change 20.03.2019
+# 
+# fixed samples bug for mame2003-plus. Please put sample folder in 
+#     mame2003plus folder. Currently in /mnt/ntfs/rpi2jamma/arcade/samples
+#     This should be somewhere else fixme
+# checked highres themes
+# added scale_img programm for working with themes
+# A menu folder can now be added in the theme folder for own menu snaps. 
+#     Please check /root/themes/themes/simple 
+# bug fixes for theme parameter
+# added KEY_ENTER and KEY_BACKSPACE to p1b1 and p1b2 for navigating retroach
+#      menu. Please test
+# added F1 = p1start and p1b2 to pikeyd165, so retroarch 
+#      can be accessed without keyboard
+
+# change 19.03.2019
+# hide text message on boot up
+# added clean wifi connectors to deploy
+# throwing out extra backgrounds for options, gamelists and stuff 
+ 
+# change 18.03.2019 
+# reworked all themes with video snaps!
+# added scripts add_video_config.sh
+# added omxplayer rotation for vertical screens
+
+# change 15.03.2019
+# moved templates to config folder
+# added feature init or recovery for from tmp files 
+#   like pikeyd165 or background, lemonlauncher template 
+# bug fixed theme handling
+# added feature for theme with dedicated backgrounds for background_gamelists.png, background_options.png, background_themes.png 
+# added script show_text on framebuffer
+# added new intro videos splash.mp4, splash_neon.mp4
+
+# change 14.03.2019
+# added add favourites button to lemonlauncher
+# added snap feature to lemonlauncher for menu 
+#   items like configuration, arcade, snes, ...
+# added video snap preview to lemonlauncher 
+# added snaps for menu items
+# optimzed shell yres to 220 
+
+# change 07.03.2019
+# added menu png and complere 6 button gamepad retroarch and ll configuration and lemon configuration 
+# installed omxplayer and ffmpeg
+# fixed lemonlauncher to handle usb gamepads with analog thumbsticks
+# added hotkey, game exit, retroarch menu to joy setup wizard
+# fixed chrashes on joy wizard that messes up lemonlauncher
+# added support for analog thumb sticks for joy setup wizard
+# fix vertical setup gets lost after reboot fix
+# fixed bugs when selecting themes in vertical setup.
+# added games with tag romof=neogeo to parents.  
+# added new theme snap
+# rework of logs and fixed some bugs for rotation.
+# added parameter SHOW_ALL for showing all games in vertical setup. 
+# added simple_pin, simple_pin2, simple_pin_vert, simple_pin_vert2 from
+#     from pinHp Image to regamebox. thanks for this.
+# 
+
+
+
+
+### version 2.5.2
+
+# fix in init_usb_folders.sh for generating usb stick folder structure
+# added progress notification for generating usb stick folder structure
+# fixed bug in grep arcade rom resolution
+
+### version 2.5 
+
+# change 07.02.2019
+# wrote some concept in own_docs
+# put suffix handling for mame2003plus
+# put general arcade folder and general fba folder neogeo in emulator.cfg
+# filter bin in psx
+
+# change 05.02.2019
+# generated new gamelists for advmame, mame2000, mame2003plus and put them 
+#     all in the mame_list_full.csv and mame_list_parent.csv
+# bugfixing init usb stick handling : extract the generate folder on usb stick
+#     from the function mount_usb_stick and made a own function that comes
+#     after the autoconfig of pi2scart and pi2jamma. This was needed because 
+#     parameter config is needed before generating folder for user input
+# checked all missing roms for mame2000, mame2003plus, advmame and lr-fbalpa
+  
+# change 01.02.2019
+# new emu mame2003 plus, folder mame2003plus
+# added mame2003plus to gamelister
+# new resolution file according mame2003 plus dat
+# new mame gamelist full file according mame2003 plus dat
+# new mame gamelist parent file according mame2003 plus dat
+# new highres def video settings in retroarch
+# bugfixing handling of flip, vertical and horizontal screen
+# new parameter rotation for rotation in compute_res_cmd.py
+# new feature refresh gamelist in gamelist menu
+# new parameter to turn automatic refresh of gamelist on and off
+# now editing gamelist can take effect with no refresh
+# fix fallback resolution when no res is found
+# fix c64 start issue, not tested
+# new hotkey start p2, joy p2 up = coin p2
+# mame2003 setting no warning and no disclaimer
+
+###version 2.4
+
+# change 10.01.2012
+# added gpio_26_on and _off for turning monitor with param auto_turn_screen
+# bugfix for using vert games on hori screen. TODO Test
+# made c64dtv support
+# made common highscore use for advmame, lr-fbalpha, mame2000, mame2003, mame2010
+# lemonlauncher resolution is now fetched from /boot/config.txt
+# made the optimized shell res selectable with param opt_cmdshell_res
+
+# change 08.01.2012
+# added hat handling for joy_wizard
+# bugfixing generating usb stick folders on startup
+
+###release v2.4 18.12.2018 for tester##########
+
+# change 18.12.2018
+# added joy_wizard
+# 
+
+# change 15.12.2018
+# bugfixing the center image function.
+# CRT Profiles bugfixing, consumer_base_profile did overwrites 
+#   the user made settings.
+# corrected whiptail dialog
+# bugfixing remap fba on and off 
+
+# change 14.12.2018
+# turned automatic handling of game remap off (handleUSBGamepad, buttonlayout)
+# made a parameter for remap_fba and set it default to No
+# set wait time for pi2jamma check to 0.5s
+
+
+# change 12.12.2018
+# added retroarch logging when DEBUG mode
+# added xinmotek 2 Player USB PCB to retroarch autoconfig
+# released patch 001
+
+################## Release v2.3 ######################
+# change 09.12.2018 
+# added arcade_crt_profile
+# added automatic check for pi2scart or pi2jamma detection. 
+#       use option pi2scart=A
+
+# change 04.12.2018 
+# added menu for selecting crt profile consumer, sony pvm or arcade crt
+# added dialog for setting new costum crt profile after calibration tool use
+# added USB Gamepad dialog in configuration - options - gamepads - select usb gamepad
+# added extra menu subitem for wifi, keyboard, gamecontroller and hardware
+# added into menu TODO fix pi2jamma controls 
+
+# change 02.12.2018
+# added refresh gamelist to configuration - game lists - refresh game lists
+
+# change 01.12.2018 
+# made /root/.config/retroarch/system folder for highscore
+# added system_dir /root/.config/retroarch/system to retroarch.cfg
+# made a link from .advance/hi to /root/.config/retroarch/system/highscore - works
+# made a link from fba to /root/.config/retroarch/system/highscore - works
+# made a link from mame2000 to /root/.config/retroarch/system/highscore - doesnt work
+# made a link from mame2003 to /root/.config/retroarch/system/highscore - doesnt work
+# made a link from mame2010 to /root/.config/retroarch/system/highscore - doesnt work
+# check mame20xx highscore save
+# added hi2txt in scripts and work
+# added keyboards de, uk, us, fr
+# reworked wifi
+
+# change 30.11.2018
+# extended wifi-menu wait time to 20 seconds to get active and reboot fix wlan
+# corrected show ip adress window
+# put show help in autostart instead of extra script.
+# cleared some whiptail messages like show modes and other
+
+# change 27.11.2018
+# bugfixing
+
+# change 26.11.2018
+# finshed python scripts compute_res_cmd.py and calibrate_screen.py
+# integrated calibrate screen in regamebox
+# integrated compute res in regamebox
+# added compute res feature for consoles and arcade setups. 
+# only vertical games on horitzontal screens has a fixed res now.
+# fixed bugs in toggle screen for horizontal and vertical screens
+# added 5 sec sleep for waiting on connection
+# added a fallback for rom resolution that are not in arcade_res_table.txt
+# added usb_gamepad parameter to show mode
+# added loglevel to log_msg and all log messages
+# added whiptail infobox, msgbox and yesno dialouges
+# code refactoring
+
+# change 22.11.2018
+# fixes in handlingGamePad for lemonlauncher
+# added handling of usb gamepads when changing themes
+# added lemonlauncher template plus handling of game controllers
+# read_custom_res - eliminated awk scripts to speed up
+# added rom_freq in get_rom_resolution
+# renamed function custom_res_set to set_custom_res
+# reworked set_arcade_resolution by using new compute_res python script
+# added advance comp and scan packages to /root/local/bin
+
+# changes 03.10.2018
+# - added an removed dtoverlay=sdhost,overclock_50=100 to config.txt
+# - removed man db service from startup
+# - installed chrony
+# - added lemonlauncher for ps3, xbox one, snes usb
+
+# changes 02.10.2018
+# - impl new version of ll with parameter config for usb gamepads
+# - added autoconfig for ps3, xbox one, snes usb
+# - downloaded autoconfig usb dev from online updater but all defect
+
+# change 28.09.2018
+# - made a remap for nes core
+# - made a remap for snes core
+# - made a remap for genesis core
+# - made a remap for genesis Street Fighter Game
+# - made a remap for mastersystem core
+# - made a remap for gamegear core
+# - made a remap for pce core
+# - installed git
+
+# change 27.09.2018
+# - added whiptail infoboxes for config
+# - throw out buggy and unsecure wifi settings by config file
+# - added import config to options - system menu
+# - added disable wlan to options - system menu
+# - added function set overscan for menu
+# - added function generate usb stick folders to options - system
+# - added function to copy rom frm usb stick to sd card in options - system
+# - reworked backup script
+
