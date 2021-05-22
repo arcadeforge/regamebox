@@ -5,7 +5,7 @@
 BASE_GPIO_PATH=/sys/class/gpio
 
 # Assign names to GPIO pin numbers
-COIN=26
+COIN=27
 
 # Assign names to states
 WAIT="1"
