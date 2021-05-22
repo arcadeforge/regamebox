@@ -1,5 +1,41 @@
 #!/usr/bin/bash
-clear
-#fbv -f -e -d 1 /root/.lemonlauncher/loadingen.png > /dev/null 2>&1
-#fbv -f -e  /root/.lemonlauncher/loadingen.png > /dev/null 2>&1
-# -r ignores aspect
+# Based on https://github.com/simonprickett/bash-traffic-lights-pi/blob/master/trafficlights.sh
+# This script will send a signal to a relay switch that passes machine ready to credit board that tells the coin mech to accept coins
+
+BASE_GPIO_PATH=/sys/class/gpio
+
+# Assign names to GPIO pin numbers
+COIN=27
+
+# Assign names to states
+WAIT="1"
+READY="0"
+
+# Utility function to export a pin if not already exported
+exportPin()
+{
+  if [ ! -e $BASE_GPIO_PATH/gpio$1 ]; then
+      echo "$1" > $BASE_GPIO_PATH/export
+  fi
+}
+
+# Utility function to set a pin as an output
+setOutput()
+{
+  echo "out" > $BASE_GPIO_PATH/gpio$1/direction
+}
+
+# Utility function to change state
+setState()
+{
+  echo $2 > $BASE_GPIO_PATH/gpio$1/value
+}
+
+# Export pins so that we can use them
+exportPin $COIN
+
+# Set pins as outputs
+setOutput $COIN
+
+# Set state
+setState $COIN $READY
